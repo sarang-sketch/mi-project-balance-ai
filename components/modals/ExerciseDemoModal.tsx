@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { WellnessActivity } from '../../types';
 import GlassCard from '../ui/GlassCard';
@@ -48,8 +50,11 @@ const ExerciseDemoModal: React.FC<ExerciseDemoModalProps> = ({ activity, onClose
             window.speechSynthesis.cancel();
             setIsSpeaking(false);
         } else {
-            const fullText = activity.instructions.join('. ');
-            const utterance = new SpeechSynthesisUtterance(fullText);
+            // FIX: Ensure instructions is an array before joining to prevent runtime errors.
+            const instructionsText = Array.isArray(activity.instructions) ? activity.instructions.join('. ') : '';
+            if (!instructionsText) return;
+
+            const utterance = new SpeechSynthesisUtterance(instructionsText);
             utterance.onend = () => setIsSpeaking(false);
             utterance.onerror = () => setIsSpeaking(false);
             window.speechSynthesis.speak(utterance);
@@ -102,7 +107,8 @@ const ExerciseDemoModal: React.FC<ExerciseDemoModalProps> = ({ activity, onClose
                     </div>
                     <p className="text-sm text-soft-gray mb-4">{activity.description}</p>
                     <ol className="list-decimal list-inside space-y-2 text-gray-300 text-sm">
-                        {activity.instructions.map((step, index) => (
+                        {/* FIX: Ensure instructions is an array before mapping to prevent runtime errors. */}
+                        {Array.isArray(activity.instructions) && activity.instructions.map((step, index) => (
                             <li key={index}>{step}</li>
                         ))}
                     </ol>

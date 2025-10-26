@@ -30,9 +30,12 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStartQuiz, onNavigate }) =>
             <div className="relative z-10 flex flex-col flex-grow p-6">
                 {/* Header */}
                 <header className="flex justify-between items-center w-full max-w-7xl mx-auto py-4">
-                    <div className="flex items-center gap-2">
-                        <BrainLogo isPulsing={false} className="w-8 h-8 text-white" />
-                        <span className="font-bold text-2xl">BalanceAI</span>
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                            <BrainLogo isPulsing={false} className="w-8 h-8 text-white" />
+                            <span className="font-bold text-2xl">BalanceAI</span>
+                        </div>
+                        <span className="text-xs text-soft-gray/70 ml-10 -mt-1">created by sarang and dhananjay kadam</span>
                     </div>
                     <div className="flex items-center gap-6">
                         <span className="text-soft-gray hidden sm:block">Welcome, sara</span>

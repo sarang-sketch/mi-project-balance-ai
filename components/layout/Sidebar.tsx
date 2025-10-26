@@ -1,97 +1,85 @@
+
+
 import React from 'react';
-import BrainLogo from '../ui/BrainLogo';
-import { HomeIcon, WellnessPlanIcon, BotIcon, ScanIcon, UsersIcon, ActivityIcon, BarChartIcon, SettingsIcon, LogOutIcon, BellIcon } from '../icons/NavIcons';
 import { Page } from '../../types';
+import BrainLogo from '../ui/BrainLogo';
+import { HomeIcon, WellnessPlanIcon, ScanIcon, ActivityIcon, MicIcon, UsersIcon, SettingsIcon, VideoIcon, BellIcon, MapPinIcon, BotIcon } from '../icons/NavIcons';
 
 interface SidebarProps {
     currentPage: Page;
     onNavigate: (page: Page) => void;
 }
 
-const NavItem: React.FC<{
-    icon: React.ReactNode;
-    label: string;
-    isActive: boolean;
-    onClick: () => void;
-}> = ({ icon, label, isActive, onClick }) => (
-    <li>
-        <button
-            onClick={onClick}
-            className={`flex items-center w-full p-3 rounded-lg transition-colors duration-200 ${
-                isActive ? 'bg-neon-pink/20 text-neon-pink' : 'text-soft-gray hover:bg-white/10'
-            }`}
-        >
-            {icon}
-            <span className="ml-3 font-semibold">{label}</span>
-        </button>
-    </li>
+const mainNavItems = [
+    { page: 'dashboard' as Page, icon: HomeIcon, label: 'Dashboard' },
+    { page: 'plan' as Page, icon: WellnessPlanIcon, label: 'Wellness Plan' },
+    { page: 'progress' as Page, icon: ActivityIcon, label: 'My Progress' },
+];
+
+const toolsNavItems = [
+    { page: 'activity-tracker' as Page, icon: MapPinIcon, label: 'Live Tracking' },
+    { page: 'voice-assistant' as Page, icon: MicIcon, label: 'Voice Assistant' },
+    { page: 'assistant' as Page, icon: BotIcon, label: 'Text Assistant' },
+    { page: 'scanner'as Page, icon: ScanIcon, label: 'AI Scanners' },
+    { page: 'video-creator' as Page, icon: VideoIcon, label: 'Video Creator' },
+];
+
+const communityNavItems = [
+    { page: 'community' as Page, icon: UsersIcon, label: 'Community' },
+    { page: 'notifications' as Page, icon: BellIcon, label: 'Notifications' },
+];
+
+const NavSection: React.FC<{title?: string, items: typeof mainNavItems, currentPage: Page, onNavigate: (page: Page) => void}> = ({ title, items, currentPage, onNavigate }) => (
+    <div>
+        {title && <h3 className="px-4 py-2 text-xs font-semibold text-soft-gray/60 uppercase tracking-wider">{title}</h3>}
+        <ul>
+            {items.map(item => (
+                <li key={item.page}>
+                    <button
+                        onClick={() => onNavigate(item.page)}
+                        className={`w-full flex items-center gap-4 px-4 py-3 my-1 rounded-lg text-left transition-all duration-300 ${
+                            currentPage === item.page 
+                                ? 'bg-neon-pink/80 text-white font-semibold shadow-md shadow-neon-pink/30' 
+                                : 'text-soft-gray hover:bg-card-bg/60 hover:text-white'
+                        }`}
+                    >
+                        <item.icon className="w-6 h-6" />
+                        <span>{item.label}</span>
+                    </button>
+                </li>
+            ))}
+        </ul>
+    </div>
 );
 
+
 const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
-    const mainNavItems = [
-        { id: 'dashboard', label: 'Home', icon: <HomeIcon className="w-6 h-6" /> },
-        { id: 'plan', label: 'My Plan', icon: <WellnessPlanIcon className="w-6 h-6" /> },
-        { id: 'assistant', label: 'AI Assistant', icon: <BotIcon className="w-6 h-6" /> },
-        { id: 'scanner', label: 'AI Scanners', icon: <ScanIcon className="w-6 h-6" /> },
-        { id: 'community', label: 'Community', icon: <UsersIcon className="w-6 h-6" /> },
-    ];
-
-    const secondaryNavItems = [
-        { id: 'activities', label: 'Log Activities', icon: <ActivityIcon className="w-6 h-6" /> },
-        { id: 'progress', label: 'My Progress', icon: <BarChartIcon className="w-6 h-6" /> },
-        { id: 'notifications', label: 'Notifications', icon: <BellIcon className="w-6 h-6" /> },
-    ];
-
     return (
-        <aside className="hidden md:block w-64 bg-secondary-bg h-screen fixed top-0 left-0 z-20 p-4 border-r border-orchid-purple/20">
-            <div className="flex items-center mb-10">
-                <BrainLogo isPulsing={false} className="w-10 h-10 text-neon-pink" />
-                <h1 className="text-2xl font-bold ml-2 neon-text-orchid">BalanceAI</h1>
+        <aside className="hidden lg:flex flex-col w-64 h-screen fixed top-0 left-0 bg-secondary-bg/80 backdrop-blur-lg border-r border-orchid-purple/20 z-20 p-6">
+            <div className="flex items-center gap-3 mb-8">
+                <BrainLogo isPulsing={false} className="w-9 h-9 text-white" />
+                <span className="font-bold text-2xl">BalanceAI</span>
             </div>
             
-            <nav className="flex flex-col h-[calc(100%-80px)]">
-                <ul className="space-y-2">
-                    {mainNavItems.map(item => (
-                        <NavItem
-                            key={item.id}
-                            icon={item.icon}
-                            label={item.label}
-                            isActive={currentPage === item.id}
-                            onClick={() => onNavigate(item.id as Page)}
-                        />
-                    ))}
-                </ul>
-
-                <p className="text-xs font-semibold text-soft-gray/50 uppercase mt-8 mb-2 px-3">Tracking</p>
-                 <ul className="space-y-2">
-                    {secondaryNavItems.map(item => (
-                        <NavItem
-                            key={item.id}
-                            icon={item.icon}
-                            label={item.label}
-                            isActive={currentPage === item.id}
-                            onClick={() => onNavigate(item.id as Page)}
-                        />
-                    ))}
-                </ul>
-
-                <div className="mt-auto">
-                    <ul className="space-y-2">
-                       <NavItem
-                            icon={<SettingsIcon className="w-6 h-6" />}
-                            label="Settings"
-                            isActive={currentPage === 'settings'}
-                            onClick={() => onNavigate('settings')}
-                        />
-                         <NavItem
-                            icon={<LogOutIcon className="w-6 h-6" />}
-                            label="Logout"
-                            isActive={false} // Logout is an action, not a page
-                            onClick={() => alert('Logout functionality not implemented.')}
-                        />
-                    </ul>
-                </div>
+            <nav className="flex-grow space-y-4">
+               <NavSection items={mainNavItems} currentPage={currentPage} onNavigate={onNavigate} />
+               <NavSection title="Tools" items={toolsNavItems} currentPage={currentPage} onNavigate={onNavigate} />
+               <NavSection title="Connect" items={communityNavItems} currentPage={currentPage} onNavigate={onNavigate} />
             </nav>
+
+            <div>
+                 <button
+                    onClick={() => onNavigate('settings')}
+                    className={`w-full flex items-center gap-4 px-4 py-3 my-1 rounded-lg text-left transition-all duration-300 ${
+                        currentPage === 'settings' 
+                            ? 'bg-neon-pink/80 text-white font-semibold shadow-md shadow-neon-pink/30' 
+                            : 'text-soft-gray hover:bg-card-bg/60 hover:text-white'
+                    }`}
+                >
+                    <SettingsIcon className="w-6 h-6" />
+                    <span>Settings</span>
+                </button>
+            </div>
         </aside>
     );
 };

@@ -1,96 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BalanceAI</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BalanceAI - Your Wellness Companion</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Leaflet CSS for Map View -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+      /* Base styles to match the app's futuristic, dark theme */
+      :root {
+        --deep-black: #0d0d1a;
+        --secondary-bg: #1a1a2e;
+        --card-bg: #2a2a3e;
+        --soft-gray: #a0a0b0;
+        --light-gray: #d0d0e0;
+        --white: #ffffff;
+        --orchid-purple: #8B5A8B;
+        --neon-pink: #C71585;
+        --accent-green: #32CD32;
+      }
+
+      body {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background-color: var(--deep-black);
+        color: var(--white);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Custom classes to be used with Tailwind */
+      .font-sans { font-family: 'Inter', sans-serif; }
+      .bg-deep-black { background-color: var(--deep-black); }
+      .text-white { color: var(--white); }
+      .bg-secondary-bg { background-color: var(--secondary-bg); }
+      .bg-card-bg { background-color: var(--card-bg); }
+      .text-soft-gray { color: var(--soft-gray); }
+      .text-light-gray { color: var(--light-gray); }
+      .border-orchid-purple { border-color: var(--orchid-purple); }
+      .text-orchid-purple { color: var(--orchid-purple); }
+      .bg-orchid-purple { background-color: var(--orchid-purple); }
+      .text-neon-pink { color: var(--neon-pink); }
+      .bg-neon-pink { background-color: var(--neon-pink); }
+      .border-neon-pink { border-color: var(--neon-pink); }
+      .text-accent-green { color: var(--accent-green); }
+
+      .text-gradient {
+        background: linear-gradient(90deg, var(--orchid-purple), var(--neon-pink));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-fill-color: transparent;
+      }
+      
+      .neon-text-orchid {
+        text-shadow: 0 0 5px var(--orchid-purple), 0 0 10px var(--orchid-purple);
+      }
+      
+      .neon-glow-orchid {
+        box-shadow: 0 0 5px var(--orchid-purple), 0 0 15px var(--orchid-purple);
+      }
+
+      .glass-card {
+        background: rgba(26, 26, 46, 0.6); /* --secondary-bg with opacity */
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(139, 90, 139, 0.2); /* --orchid-purple with opacity */
+      }
+      
+      .progress-bar-fill {
+        background: linear-gradient(90deg, var(--orchid-purple), var(--neon-pink));
+      }
+
+      @keyframes float {
+        0% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+        100% { transform: translateY(0px) rotate(360deg); }
+      }
+      .animate-float {
+        animation: float linear infinite;
+      }
+      
+      /* Adding keyframes for Tailwind's animate-fadeIn */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
+      
+      /* Custom Prose styles for AI responses */
+      .prose-invert h3 { color: var(--neon-pink); }
+      .prose-invert ul > li::before { background-color: var(--neon-pink); }
+    </style>
+     <script>
+        // Configure Tailwind to work with custom values
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'deep-black': '#000000',
-                        'primary-bg': '#121212',
-                        'secondary-bg': '#1A1A1A',
-                        'card-bg': '#2A2A2A',
+                        'deep-black': '#0d0d1a',
+                        'secondary-bg': '#1a1a2e',
+                        'card-bg': '#2a2a3e',
+                        'soft-gray': '#a0a0b0',
+                        'light-gray': '#d0d0e0',
                         'orchid-purple': '#8B5A8B',
                         'neon-pink': '#C71585',
-                        'soft-gray': '#a0a0a0',
-                        'light-gray': '#D1D5DB',
-                        'accent-green': '#10B981',
+                        'accent-green': '#32CD32',
                     },
-                    fontFamily: {
-                        sans: ['Poppins', 'sans-serif'],
+                     animation: {
+                        fadeIn: 'fadeIn 0.5s ease-out forwards',
                     },
                     keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0px) translateX(0px)' },
-                            '50%': { transform: 'translateY(-20px) translateX(10px)' },
-                        },
                         fadeIn: {
-                            '0%': { opacity: '0', transform: 'translateY(10px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        },
-                    },
-                    animation: {
-                        'float': 'float 15s ease-in-out infinite',
-                        'fadeIn': 'fadeIn 0.7s ease-out forwards',
-                        'fadeIn-delay-1': 'fadeIn 0.7s ease-out 0.2s forwards',
-                        'fadeIn-delay-2': 'fadeIn 0.7s ease-out 0.4s forwards',
-                    },
-                    boxShadow: {
-                        'neon-pink': '0 0 15px rgba(199, 21, 133, 0.6)',
-                        'orchid-purple': '0 0 15px rgba(139, 90, 139, 0.5)',
-                    },
-                },
-            },
+                            '0%': { opacity: 0, transform: 'translateY(10px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
         }
     </script>
-    <style>
-        .glass-card {
-            background: rgba(42, 42, 42, 0.5);
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(139, 90, 139, 0.3);
-        }
-        .neon-glow-orchid {
-            filter: drop-shadow(0 0 8px #C71585);
-        }
-        .neon-text-orchid {
-             text-shadow: 0 0 5px #C71585, 0 0 10px #C71585;
-        }
-        .progress-bar-fill {
-            background: linear-gradient(90deg, #8B5A8B, #C71585);
-        }
-        .text-gradient {
-            background-image: linear-gradient(to right, #8B5A8B, #C71585);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        /* Scrollbar styles for main content area */
-        #main-content::-webkit-scrollbar {
-            width: 8px;
-        }
-        #main-content::-webkit-scrollbar-track {
-            background: #1A1A1A;
-        }
-        #main-content::-webkit-scrollbar-thumb {
-            background-color: #8B5A8B;
-            border-radius: 10px;
-            border: 2px solid #1A1A1A;
-        }
-        #main-content::-webkit-scrollbar-thumb:hover {
-            background-color: #C71585;
-        }
-    </style>
 </head>
-<body class="bg-primary-bg">
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+
     <script type="importmap">
     {
       "imports": {
@@ -102,6 +146,11 @@
       }
     }
     </script>
+    
+    <!-- Leaflet JS for Map View -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- App entry point -->
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

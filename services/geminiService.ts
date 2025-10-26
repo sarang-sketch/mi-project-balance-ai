@@ -1,90 +1,129 @@
-import { GoogleGenAI, Type, Chat } from "@google/genai";
-import { QuizAnswers, WellnessPlan } from "../types";
-import { QUIZ_QUESTIONS } from "../constants";
+import {
+    GoogleGenAI,
+    Type,
+    GenerateContentResponse,
+    GenerateVideosOperation,
+    Modality,
+} from '@google/genai';
+import { QuizAnswers, WellnessPlan } from '../types';
+import { QUIZ_QUESTIONS } from '../constants';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const createWellnessPrompt = (answers: QuizAnswers, goals: string[]): string => {
-    let prompt = "Based on the following user's self-assessment answers and goals, create a personalized wellness plan. The user is looking for a balanced approach to mental, physical, and digital health.\n\n";
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
-    prompt += "== User's Self-Assessment ==\n";
-    for (const questionIndex in answers) {
-        const question = QUIZ_QUESTIONS[parseInt(questionIndex)];
-        const answerIndex = answers[parseInt(questionIndex)];
-        const answerText = question.options[answerIndex];
-        prompt += `- ${question.question}: ${answerText}\n`;
-    }
-
-    prompt += "\n== User's Goals ==\n";
-    goals.forEach(goal => {
-        prompt += `- ${goal}\n`;
-    });
-
-    prompt += "\n== Instructions ==\n";
-    prompt += "Generate a comprehensive but gentle and actionable wellness plan with three sections: Mental Wellness, Physical Wellness, and Digital Wellness. For each section, provide a title, a brief description (1-2 sentences), and 3-4 specific, actionable activities with a name, description, suggested duration (e.g., '15 minutes'), and a list of step-by-step instructions. Conclude with a short, encouraging summary (2-3 sentences). The tone should be supportive, positive, and non-judgmental. The entire output must be in JSON format conforming to the provided schema.";
-
-    return prompt;
+// Helper to format quiz answers for the prompt
+const formatQuizForPrompt = (answers: QuizAnswers): string => {
+    return QUIZ_QUESTIONS.map((q, index) => {
+        const answerIndex = answers[index];
+        if (answerIndex === undefined || !q.options[answerIndex]) return '';
+        const answerText = q.options[answerIndex];
+        return `Question: ${q.question}\nAnswer: ${answerText}`;
+    }).filter(Boolean).join('\n\n');
 };
 
 export const generateWellnessPlan = async (answers: QuizAnswers, goals: string[]): Promise<WellnessPlan> => {
-    const prompt = createWellnessPrompt(answers, goals);
+    const quizData = formatQuizForPrompt(answers);
+    const prompt = `
+Based on the following quiz answers, create a personalized wellness plan.
 
-    const activitySchema = {
-        type: Type.OBJECT,
-        properties: {
-            name: { type: Type.STRING, description: "Name of the activity." },
-            description: { type: Type.STRING, description: "Brief description of how to do the activity." },
-            duration: { type: Type.STRING, description: "Suggested duration, e.g., '15 minutes' or '1 hour'." },
-            instructions: {
-                type: Type.ARRAY,
-                description: "A list of step-by-step instructions for the exercise.",
-                items: { type: Type.STRING }
-            },
-        },
-        required: ['name', 'description', 'duration', 'instructions'],
-    };
+Quiz Answers:
+${quizData}
 
-    const wellnessSectionSchema = {
-        type: Type.OBJECT,
-        properties: {
-            title: { type: Type.STRING, description: "Title for the wellness section." },
-            description: { type: Type.STRING, description: "A brief, encouraging description of this section's focus." },
-            activities: {
-                type: Type.ARRAY,
-                description: "A list of 3-4 suggested activities.",
-                items: activitySchema,
-            },
-        },
-        required: ['title', 'description', 'activities'],
-    };
+User's Goals: ${goals.join(', ')}
+
+The plan should be holistic, covering mental, physical, and digital wellness.
+- For each category (mental, physical, digital), provide a title, a short description, and exactly 3 actionable activities.
+- Each activity needs a name, a duration (e.g., "15 minutes"), a brief description, and a short, numbered list of instructions.
+- Provide an overall summary of the plan, written in a supportive and encouraging tone.
+- The entire response MUST be a valid JSON object. Do not include any text outside of the JSON structure.
+`;
 
     const responseSchema = {
         type: Type.OBJECT,
         properties: {
-            mentalWellness: { ...wellnessSectionSchema, description: "Section focusing on mental clarity and emotional health." },
-            physicalWellness: { ...wellnessSectionSchema, description: "Section focusing on physical health and energy." },
-            digitalWellness: { ...wellnessSectionSchema, description: "Section focusing on healthy technology habits." },
-            summary: { type: Type.STRING, description: "A final, encouraging summary of the plan." },
+            summary: { type: Type.STRING },
+            mentalWellness: {
+                type: Type.OBJECT,
+                properties: {
+                    title: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    activities: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                name: { type: Type.STRING },
+                                duration: { type: Type.STRING },
+                                description: { type: Type.STRING },
+                                instructions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                            },
+                            required: ["name", "duration", "description", "instructions"],
+                        },
+                    },
+                },
+                 required: ["title", "description", "activities"],
+            },
+            physicalWellness: {
+                type: Type.OBJECT,
+                properties: {
+                    title: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    activities: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                name: { type: Type.STRING },
+                                duration: { type: Type.STRING },
+                                description: { type: Type.STRING },
+                                instructions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                            },
+                             required: ["name", "duration", "description", "instructions"],
+                        },
+                    },
+                },
+                 required: ["title", "description", "activities"],
+            },
+            digitalWellness: {
+                type: Type.OBJECT,
+                properties: {
+                    title: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    activities: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                name: { type: Type.STRING },
+                                duration: { type: Type.STRING },
+                                description: { type: Type.STRING },
+                                instructions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                            },
+                             required: ["name", "duration", "description", "instructions"],
+                        },
+                    },
+                },
+                 required: ["title", "description", "activities"],
+            },
         },
-        required: ['mentalWellness', 'physicalWellness', 'digitalWellness', 'summary'],
+         required: ["summary", "mentalWellness", "physicalWellness", "digitalWellness"],
     };
-    
+
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
-            responseMimeType: "application/json",
-            responseSchema: responseSchema,
+            responseMimeType: 'application/json',
+            responseSchema,
         },
     });
 
     try {
-        const text = response.text.trim();
-        return JSON.parse(text) as WellnessPlan;
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText) as WellnessPlan;
     } catch (e) {
-        console.error("Failed to parse wellness plan JSON:", e);
-        console.error("Raw Gemini response:", response.text);
-        throw new Error("Could not generate a valid wellness plan. The AI's response was not in the correct format.");
+        console.error("Failed to parse wellness plan JSON:", response.text, e);
+        throw new Error("The AI returned an invalid plan format. Please try again.");
     }
 };
 
@@ -92,41 +131,133 @@ export const analyzeFoodImage = async (base64Data: string, mimeType: string): Pr
     const imagePart = {
         inlineData: {
             data: base64Data,
-            mimeType: mimeType,
+            mimeType,
         },
     };
-
     const textPart = {
-        text: "Analyze this image of a meal. Provide a brief nutritional overview, including an estimated calorie count, main macronutrients (protein, carbs, fat), and potential health benefits or considerations. Format the response as simple HTML for display.",
+        text: 'Analyze the food in this image. Provide a nutritional estimate (calories, protein, carbs, fats) and a general health assessment. Format the response as markdown.'
     };
-    
-    const model = 'gemini-2.5-flash';
-
     const response = await ai.models.generateContent({
-        model: model,
+        model: 'gemini-2.5-flash',
         contents: { parts: [imagePart, textPart] },
     });
-
     return response.text;
 };
 
-// --- New AI Chat Feature ---
-let chat: Chat | null = null;
+export const editImageWithText = async (base64Data: string, mimeType: string, prompt: string): Promise<string> => {
+    const imagePart = {
+        inlineData: {
+            data: base64Data,
+            mimeType,
+        },
+    };
+    const textPart = { text: prompt };
 
-const getChat = (): Chat => {
-    if (!chat) {
-        chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-                systemInstruction: "You are BalanceAI, a friendly, supportive, and knowledgeable wellness assistant. Your goal is to provide helpful, encouraging, and safe advice on topics like mental health, physical fitness, and digital wellbeing. Keep your responses concise and easy to understand. Do not provide medical advice; if a user asks for medical advice, gently guide them to consult a healthcare professional.",
-            }
-        });
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts: [imagePart, textPart] },
+        config: {
+            responseModalities: [Modality.IMAGE],
+        },
+    });
+
+    for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+            return part.inlineData.data;
+        }
     }
-    return chat;
-}
+    throw new Error("AI did not return an image.");
+};
 
-export const getChatResponse = async (message: string): Promise<string> => {
-    const chatSession = getChat();
-    const response = await chatSession.sendMessage({ message });
+export const analyzeDigitalHabits = async (textInput: string): Promise<string> => {
+    const prompt = `As an AI wellness coach, analyze the following text describing a user's digital habits or containing content they've been exposed to. Provide constructive, positive, and actionable feedback. If the text is negative, offer strategies for coping. If it describes habits, suggest ways to improve digital wellness. Format as markdown. \n\nUser input: "${textInput}"`;
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+    });
     return response.text;
+};
+
+export const generateCommunityPosts = async (): Promise<{ user: string; text: string; }[]> => {
+    const prompt = `Generate 5 anonymous, supportive, and motivational posts for a wellness app community. Each post should have a 'user' (like "Mindful User" or "Active Soul") and 'text'. The entire response must be a valid JSON array of objects.`;
+
+    const responseSchema = {
+        type: Type.ARRAY,
+        items: {
+            type: Type.OBJECT,
+            properties: {
+                user: { type: Type.STRING },
+                text: { type: Type.STRING },
+            },
+            required: ["user", "text"],
+        },
+    };
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: 'application/json',
+            responseSchema,
+        },
+    });
+
+    try {
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText);
+    } catch (e) {
+        console.error("Failed to parse community posts JSON:", e);
+        return [{ user: 'Admin', text: 'Welcome to the community! Something went wrong loading posts, but we\'re glad you\'re here.' }];
+    }
+};
+
+export const generateChatResponse = async (history: string, currentInput: string): Promise<string> => {
+    const prompt = `You are BalanceAI, a friendly and supportive wellness assistant. Here is the conversation history:\n${history}\n\nUser: ${currentInput}\nBalanceAI:`;
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+    });
+    return response.text;
+};
+
+export const getGroundedChatResponse = async (currentInput: string, latitude: number, longitude: number): Promise<GenerateContentResponse> => {
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: currentInput,
+        config: {
+            tools: [{ googleMaps: {} }],
+            toolConfig: {
+                retrievalConfig: {
+                    latLng: {
+                        latitude,
+                        longitude,
+                    }
+                }
+            }
+        }
+    });
+    return response;
+};
+
+
+export const generateWellnessVideo = async (prompt: string, aspectRatio: '16:9' | '9:16'): Promise<GenerateVideosOperation> => {
+    // Re-instantiate to ensure the latest API key from the selection dialog is used
+    const videoAI = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    let operation = await videoAI.models.generateVideos({
+        model: 'veo-3.1-fast-generate-preview',
+        prompt: prompt,
+        config: {
+            numberOfVideos: 1,
+            resolution: '720p',
+            aspectRatio: aspectRatio,
+        }
+    });
+    return operation;
+};
+
+export const getWellnessVideoOperation = async (operation: GenerateVideosOperation): Promise<GenerateVideosOperation> => {
+    // Re-instantiate for API key freshness
+    const videoAI = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    const updatedOperation = await videoAI.operations.getVideosOperation({ operation: operation });
+    return updatedOperation;
 };

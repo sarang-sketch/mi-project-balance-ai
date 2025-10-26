@@ -1,9 +1,12 @@
+
+
 import React, { useMemo, useState, useEffect } from 'react';
 import { QuizAnswers, WellnessPlan } from '../types';
 import GlassCard from '../components/ui/GlassCard';
 import NeonButton from '../components/ui/NeonButton';
 import { generateWellnessPlan } from '../services/geminiService';
 import BrainLogo from '../components/ui/BrainLogo';
+import { QUIZ_QUESTIONS } from '../constants';
 
 interface ResultPageProps {
   answers: QuizAnswers | null;
@@ -24,15 +27,25 @@ const ResultPage: React.FC<ResultPageProps> = ({ answers, onPlanGenerated }) => 
 
     const { score, mood } = useMemo(() => {
         if (!answers) return { score: 0, mood: null };
+        
         let totalScore = 0;
-        // Simple scoring: lower index for answer = better score (0 is best). Max score is 4 per question.
-        const totalPossibleScore = Object.keys(answers).length * 4; 
-        Object.values(answers).forEach(answerIndex => {
-            // FIX: Explicitly convert answerIndex to a number to prevent type errors in arithmetic operations.
-            totalScore += (4 - Number(answerIndex));
-        });
+        let totalPossibleScore = 0;
 
-        const percentage = Math.max(0, Math.min(100, Math.round((totalScore / totalPossibleScore) * 100)));
+        Object.entries(answers).forEach(([questionIndexStr, answerIndex]) => {
+            const questionIndex = Number(questionIndexStr);
+            const question = QUIZ_QUESTIONS[questionIndex];
+            if (question) {
+                const maxScoreForQuestion = question.options.length - 1;
+                totalPossibleScore += maxScoreForQuestion;
+                // Assuming lower index is better (e.g., index 0 is best)
+                // Fix: Explicitly cast `answerIndex` to a number to resolve potential type inference issues.
+                totalScore += (maxScoreForQuestion - Number(answerIndex));
+            }
+        });
+        
+        const percentage = totalPossibleScore > 0
+            ? Math.max(0, Math.min(100, Math.round((totalScore / totalPossibleScore) * 100)))
+            : 0;
         
         let moodResult: MoodResult;
         if (percentage > 75) {

@@ -1,13 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import GlassCard from '../components/ui/GlassCard';
 import { UsersIcon } from '../components/icons/NavIcons';
+import { generateCommunityPosts } from '../services/geminiService';
+import BrainLogo from '../components/ui/BrainLogo';
+
+interface Post {
+    id?: number;
+    user: string;
+    text: string;
+}
 
 const CommunityPage: React.FC = () => {
-    const posts = [
-        { id: 1, user: 'Anonymous User', text: "Just wanted to share a small win: I went for a 15-minute walk today instead of scrolling on my phone. Feeling good! 🌱" },
-        { id: 2, user: 'Anonymous User', text: "Feeling a bit overloaded today, but reading everyone's tips here is helping. Thanks for being a positive space. 🖤" },
-        { id: 3, user: 'Anonymous User', text: "Quick tip: I've started putting my phone on airplane mode for the first 30 minutes of my day. It's been a game-changer for my focus." },
-    ];
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchPosts = async () => {
+            setIsLoading(true);
+            try {
+                const generatedPosts = await generateCommunityPosts();
+                setPosts(generatedPosts);
+            } catch (error) {
+                console.error("Failed to fetch community posts:", error);
+                // Fallback posts on error
+                setPosts([{ id: 1, user: 'Anonymous User', text: "Welcome to the community! Share a positive thought." }]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchPosts();
+    }, []);
+
     return (
         <div className="py-12 animate-fadeIn">
             <header className="text-center mb-12">
@@ -20,19 +43,27 @@ const CommunityPage: React.FC = () => {
                     <textarea className="w-full bg-deep-black/30 border border-orchid-purple/30 rounded-lg p-2 text-sm placeholder-soft-gray/50 focus:outline-none focus:ring-1 focus:ring-neon-pink" placeholder="Share a positive thought or tip..."></textarea>
                     <button className="mt-2 w-full text-sm py-2 bg-neon-pink/80 rounded-full font-semibold hover:bg-neon-pink transition-colors">Post Anonymously</button>
                  </GlassCard>
-                {posts.map(post => (
-                    <GlassCard key={post.id}>
-                        <div className="flex items-start space-x-3">
-                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orchid-purple/30 flex items-center justify-center">
-                                <UsersIcon className="w-5 h-5 text-soft-gray"/>
-                            </div>
-                            <div>
-                                <p className="font-semibold text-sm text-neon-pink">{post.user}</p>
-                                <p className="text-gray-300 mt-1">{post.text}</p>
-                            </div>
-                        </div>
+
+                {isLoading ? (
+                    <GlassCard className="text-center p-8">
+                         <BrainLogo isPulsing className="w-12 h-12 mx-auto text-neon-pink" />
+                         <p className="mt-4 text-soft-gray">Loading community thoughts...</p>
                     </GlassCard>
-                ))}
+                ) : (
+                    posts.map((post, index) => (
+                        <GlassCard key={index}>
+                            <div className="flex items-start space-x-3">
+                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orchid-purple/30 flex items-center justify-center">
+                                    <UsersIcon className="w-5 h-5 text-soft-gray"/>
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-sm text-neon-pink">{post.user}</p>
+                                    <p className="text-gray-300 mt-1">{post.text}</p>
+                                </div>
+                            </div>
+                        </GlassCard>
+                    ))
+                )}
             </div>
         </div>
     );

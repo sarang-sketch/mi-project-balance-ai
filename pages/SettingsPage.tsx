@@ -1,59 +1,78 @@
 import React from 'react';
 import GlassCard from '../components/ui/GlassCard';
-import NeonButton from '../components/ui/NeonButton';
+import { UserIcon, BellIcon, ChecklistIcon } from '../components/icons/NavIcons';
 
-const SettingsItem: React.FC<{ title: string; description: string; children: React.ReactNode }> = ({ title, description, children }) => (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 py-4 border-b border-orchid-purple/20">
+const SettingsToggle: React.FC<{ label: string; description: string; enabled: boolean }> = ({ label, description, enabled }) => (
+    <div className="flex justify-between items-center">
         <div>
-            <h4 className="font-semibold text-lg">{title}</h4>
+            <p className="font-semibold">{label}</p>
             <p className="text-sm text-soft-gray">{description}</p>
         </div>
-        <div className="flex-shrink-0 pt-2 sm:pt-0">
-            {children}
+        <div className={`w-14 h-8 rounded-full p-1 cursor-pointer transition-colors ${enabled ? 'bg-neon-pink' : 'bg-secondary-bg'}`}>
+            <div className={`w-6 h-6 rounded-full bg-white transform transition-transform ${enabled ? 'translate-x-6' : ''}`} />
         </div>
     </div>
 );
 
-const ToggleSwitch: React.FC = () => (
-    <label className="relative inline-flex items-center cursor-pointer">
-        <input type="checkbox" value="" className="sr-only peer" defaultChecked />
-        <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-neon-pink peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-pink"></div>
-    </label>
-);
-
-
 const SettingsPage: React.FC = () => {
     return (
-        <div className="py-12 animate-fadeIn">
-            <header className="text-center mb-12">
+        <div className="animate-fadeIn space-y-8">
+            <header className="text-center">
                 <h1 className="text-4xl md:text-5xl font-bold neon-text-orchid">Settings</h1>
-                <p className="text-lg text-soft-gray mt-2">Customize your BalanceAI experience.</p>
+                <p className="text-lg text-soft-gray mt-2">Manage your account and preferences.</p>
             </header>
+            
+            <div className="max-w-2xl mx-auto space-y-8">
+                <GlassCard>
+                    <div className="flex items-center gap-4 mb-6">
+                         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orchid-purple/30 flex items-center justify-center">
+                            <UserIcon className="w-6 h-6 text-soft-gray"/>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold">Profile</h2>
+                            <p className="text-sm text-soft-gray">Manage your personal information.</p>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <button className="w-full text-left p-3 bg-card-bg/50 rounded-lg hover:bg-card-bg transition-colors">Change Name</button>
+                        <button className="w-full text-left p-3 bg-card-bg/50 rounded-lg hover:bg-card-bg transition-colors">Change Email</button>
+                        <button className="w-full text-left p-3 bg-card-bg/50 rounded-lg hover:bg-card-bg transition-colors">Change Password</button>
+                    </div>
+                </GlassCard>
 
-            <GlassCard className="max-w-2xl mx-auto">
-                <SettingsItem title="Dark Orchid Theme" description="Current theme">
-                    <span className="font-bold text-neon-pink">Active</span>
-                </SettingsItem>
-                <SettingsItem title="Push Notifications" description="Daily goals and check-ins">
-                    <ToggleSwitch />
-                </SettingsItem>
-                <SettingsItem title="Wearable Sync" description="Connect your fitness tracker">
-                    <button className="text-sm py-1 px-3 bg-orchid-purple/50 rounded-full font-semibold hover:bg-orchid-purple/80 transition-colors">Connect</button>
-                </SettingsItem>
-                <SettingsItem title="WhatsApp Integration" description="Enable activity tracking">
-                    <ToggleSwitch />
-                </SettingsItem>
-            </GlassCard>
-
-             <GlassCard className="max-w-2xl mx-auto mt-8">
-                <h3 className="text-xl font-bold neon-text-orchid mb-4">Data & Privacy</h3>
-                 <SettingsItem title="Export My Data" description="Download all your personal data">
-                    <button className="text-sm text-soft-gray hover:text-white">Export</button>
-                 </SettingsItem>
-                  <SettingsItem title="Delete Account" description="Permanently delete your account and data">
-                     <button className="text-sm text-red-500 hover:text-red-400">Delete</button>
-                 </SettingsItem>
-            </GlassCard>
+                 <GlassCard>
+                    <div className="flex items-center gap-4 mb-6">
+                         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orchid-purple/30 flex items-center justify-center">
+                            <BellIcon className="w-6 h-6 text-soft-gray"/>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold">Notifications</h2>
+                            <p className="text-sm text-soft-gray">Control how you receive alerts.</p>
+                        </div>
+                    </div>
+                     <div className="space-y-6">
+                        <SettingsToggle label="Push Notifications" description="Receive alerts on your device" enabled={true} />
+                        <SettingsToggle label="Email Summaries" description="Get weekly progress reports" enabled={true} />
+                        <SettingsToggle label="Community Alerts" description="Notify me of new community posts" enabled={false} />
+                    </div>
+                </GlassCard>
+                
+                 <GlassCard>
+                    <div className="flex items-center gap-4 mb-6">
+                         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orchid-purple/30 flex items-center justify-center">
+                            <ChecklistIcon className="w-6 h-6 text-soft-gray"/>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold">Data & Privacy</h2>
+                             <p className="text-sm text-soft-gray">Manage your data and privacy settings.</p>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                         <button className="w-full text-left p-3 bg-card-bg/50 rounded-lg hover:bg-card-bg transition-colors">Export My Data</button>
+                         <button className="w-full text-left p-3 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors">Delete My Account</button>
+                    </div>
+                </GlassCard>
+            </div>
         </div>
     );
 };

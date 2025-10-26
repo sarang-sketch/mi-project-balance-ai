@@ -1,93 +1,92 @@
+
 import React, { useState } from 'react';
-import { WellnessPlan, WellnessActivity } from '../types';
+import { WellnessPlan, WellnessCategory, WellnessActivity, Page } from '../types';
 import GlassCard from '../components/ui/GlassCard';
-import { WellnessPlanIcon, PlusIcon } from '../components/icons/NavIcons';
 import ExerciseDemoModal from '../components/modals/ExerciseDemoModal';
+import { BotIcon, VideoIcon } from '../components/icons/NavIcons';
+import NeonButton from '../components/ui/NeonButton';
 
 interface PlanPageProps {
     plan: WellnessPlan | null;
+    onNavigate: (page: Page) => void;
 }
 
-const ActivityCard: React.FC<{
-    activity: WellnessActivity;
-    onDemoClick: (activity: WellnessActivity) => void;
-}> = ({ activity, onDemoClick }) => (
-    <div className="bg-card-bg/50 p-4 rounded-lg flex flex-col sm:flex-row justify-between gap-4">
-        <div className="flex-grow">
-            <h4 className="font-bold">{activity.name}</h4>
-            <p className="text-sm text-soft-gray">{activity.description}</p>
-            <p className="text-xs text-neon-pink mt-1">{activity.duration}</p>
+const CategoryCard: React.FC<{ category: WellnessCategory, onActivitySelect: (activity: WellnessActivity) => void }> = ({ category, onActivitySelect }) => (
+    <GlassCard>
+        <h2 className="text-2xl font-bold mb-2 neon-text-orchid">{category.title}</h2>
+        <p className="text-sm text-soft-gray mb-6">{category.description}</p>
+        <div className="space-y-3">
+            {(category?.activities || []).map((activity, index) => (
+                <div 
+                    key={index} 
+                    className="bg-card-bg/50 p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-card-bg transition-colors"
+                    onClick={() => onActivitySelect(activity)}
+                >
+                    <div>
+                        <h4 className="font-bold">{activity.name}</h4>
+                        <p className="text-xs text-soft-gray">{activity.duration}</p>
+                    </div>
+                    <span className="text-xs font-semibold text-neon-pink">View Demo →</span>
+                </div>
+            ))}
         </div>
-        <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto justify-end flex-shrink-0">
-            <button
-                onClick={() => onDemoClick(activity)}
-                className="px-3 py-1 text-xs bg-orchid-purple/50 rounded-full font-semibold hover:bg-orchid-purple/80 transition-colors w-full sm:w-auto"
-            >
-                Demo
-            </button>
-             <button className="px-3 py-1 text-xs bg-secondary-bg rounded-full font-semibold hover:bg-card-bg transition-colors flex items-center justify-center w-full sm:w-auto">
-                <PlusIcon className="w-3 h-3 mr-1" /> Log
-            </button>
-        </div>
-    </div>
+    </GlassCard>
 );
 
-const PlanPage: React.FC<PlanPageProps> = ({ plan }) => {
-    const [selectedExercise, setSelectedExercise] = useState<WellnessActivity | null>(null);
+const PlanPage: React.FC<PlanPageProps> = ({ plan, onNavigate }) => {
+    const [selectedActivity, setSelectedActivity] = useState<WellnessActivity | null>(null);
 
     if (!plan) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-                <WellnessPlanIcon className="w-16 h-16 text-soft-gray mb-4" />
-                <h2 className="text-2xl font-bold">No Wellness Plan Found</h2>
-                <p className="text-soft-gray mt-2">Complete the initial assessment to generate your personalized plan.</p>
+            <div className="min-h-full flex flex-col justify-center items-center text-center">
+                <h1 className="text-3xl font-bold">No Wellness Plan Found</h1>
+                <p className="text-soft-gray mt-2">Please complete the initial assessment to generate your personalized plan.</p>
             </div>
         );
     }
-    
-    const { mentalWellness, physicalWellness, digitalWellness, summary } = plan;
 
     return (
-        <div className="space-y-8 animate-fadeIn">
-            <header className="text-center">
-                <h1 className="text-4xl md:text-5xl font-bold neon-text-orchid">Your AI Wellness Plan</h1>
-                <p className="text-lg text-soft-gray mt-2 max-w-2xl mx-auto">{summary}</p>
+        <div className="animate-fadeIn space-y-8">
+             <header className="text-center">
+                <h1 className="text-4xl md:text-5xl font-bold neon-text-orchid">Your Wellness Plan</h1>
+                <p className="text-lg text-soft-gray mt-2">A personalized guide to a more balanced you.</p>
             </header>
 
-            <GlassCard>
-                <h3 className="text-2xl font-bold mb-4">{mentalWellness.title} 🧠</h3>
-                <p className="text-soft-gray mb-6">{mentalWellness.description}</p>
-                <div className="space-y-4">
-                    {mentalWellness.activities.map((activity, index) => (
-                        <ActivityCard key={`mental-${index}`} activity={activity} onDemoClick={setSelectedExercise} />
-                    ))}
+            <GlassCard className="border-neon-pink/50">
+                 <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orchid-purple/20 flex items-center justify-center">
+                        <BotIcon className="w-6 h-6 text-neon-pink" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold">AI Summary</h3>
+                        <p className="text-soft-gray mt-1">{plan.summary}</p>
+                    </div>
                 </div>
             </GlassCard>
 
-            <GlassCard>
-                <h3 className="text-2xl font-bold mb-4">{physicalWellness.title} 💪</h3>
-                <p className="text-soft-gray mb-6">{physicalWellness.description}</p>
-                <div className="space-y-4">
-                    {physicalWellness.activities.map((activity, index) => (
-                        <ActivityCard key={`physical-${index}`} activity={activity} onDemoClick={setSelectedExercise} />
-                    ))}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <CategoryCard category={plan.mentalWellness} onActivitySelect={setSelectedActivity} />
+                <CategoryCard category={plan.physicalWellness} onActivitySelect={setSelectedActivity} />
+                <CategoryCard category={plan.digitalWellness} onActivitySelect={setSelectedActivity} />
+            </div>
+
+            <GlassCard className="text-center">
+                <h2 className="text-2xl font-bold neon-text-orchid">Bring Your Plan to Life</h2>
+                <p className="text-soft-gray mt-2 mb-6">Use AI to generate a motivational video based on your personalized plan.</p>
+                <div className="max-w-xs mx-auto">
+                    <NeonButton onClick={() => onNavigate('video-creator')}>
+                        <div className="flex items-center justify-center gap-2">
+                            <VideoIcon className="w-5 h-5"/>
+                            <span>Visualize Your Plan</span>
+                        </div>
+                    </NeonButton>
                 </div>
             </GlassCard>
 
-            <GlassCard>
-                <h3 className="text-2xl font-bold mb-4">{digitalWellness.title} 📱</h3>
-                <p className="text-soft-gray mb-6">{digitalWellness.description}</p>
-                <div className="space-y-4">
-                    {digitalWellness.activities.map((activity, index) => (
-                        <ActivityCard key={`digital-${index}`} activity={activity} onDemoClick={setSelectedExercise} />
-                    ))}
-                </div>
-            </GlassCard>
-
-            {selectedExercise && (
-                <ExerciseDemoModal
-                    activity={selectedExercise}
-                    onClose={() => setSelectedExercise(null)}
+            {selectedActivity && (
+                <ExerciseDemoModal 
+                    activity={selectedActivity}
+                    onClose={() => setSelectedActivity(null)}
                 />
             )}
         </div>
