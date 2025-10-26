@@ -110,11 +110,12 @@ The plan should be holistic, covering mental, physical, and digital wellness.
     };
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.5-pro',
         contents: prompt,
         config: {
             responseMimeType: 'application/json',
             responseSchema,
+            thinkingConfig: { thinkingBudget: 32768 },
         },
     });
 

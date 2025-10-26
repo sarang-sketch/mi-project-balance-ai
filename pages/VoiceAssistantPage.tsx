@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, Blob } from '@google/genai';
-import { VoiceAssistantState } from '../types';
+import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, Blob, Type, FunctionDeclaration } from '@google/genai';
+import { VoiceAssistantState, Notification } from '../types';
 import GlassCard from '../components/ui/GlassCard';
 import BrainLogo from '../components/ui/BrainLogo';
 import { MicIcon } from '../components/icons/NavIcons';
@@ -45,9 +45,38 @@ async function decodeAudioData(
 }
 
 
+const scheduleTaskFunctionDeclaration: FunctionDeclaration = {
+    name: 'scheduleTask',
+    parameters: {
+        type: Type.OBJECT,
+        description: 'Schedules a to-do task for the user.',
+        properties: {
+            taskDescription: { type: Type.STRING, description: 'The details of the task to schedule.' },
+            time: { type: Type.STRING, description: 'The time for the task, e.g., "in 1 hour" or "at 5pm"' },
+        },
+        required: ['taskDescription', 'time'],
+    },
+};
+
+const setWakeUpCallFunctionDeclaration: FunctionDeclaration = {
+    name: 'setWakeUpCall',
+    parameters: {
+        type: Type.OBJECT,
+        description: 'Sets a wake-up call or alarm for the user.',
+        properties: {
+            time: { type: Type.STRING, description: 'The time for the wake-up call, e.g., "at 7am"' },
+        },
+        required: ['time'],
+    },
+};
+
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
-const VoiceAssistantPage: React.FC = () => {
+interface VoiceAssistantPageProps {
+    addNotification: (notification: Omit<Notification, 'id'>) => void;
+}
+
+const VoiceAssistantPage: React.FC<VoiceAssistantPageProps> = ({ addNotification }) => {
     const [state, setState] = useState<VoiceAssistantState>({
         isConnecting: false,
         isActive: false,
@@ -65,9 +94,7 @@ const VoiceAssistantPage: React.FC = () => {
     const audioSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
 
     const stopAllAudio = useCallback(() => {
-        audioSourcesRef.current.forEach(source => {
-            source.stop();
-        });
+        audioSourcesRef.current.forEach(source => source.stop());
         audioSourcesRef.current.clear();
         nextStartTimeRef.current = 0;
     }, []);
@@ -76,31 +103,17 @@ const VoiceAssistantPage: React.FC = () => {
         if (state.sessionPromise) {
             state.sessionPromise.then(session => session.close());
         }
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-        }
-        if (scriptProcessorRef.current) {
-            scriptProcessorRef.current.disconnect();
-            scriptProcessorRef.current.onaudioprocess = null;
-        }
-        if (mediaStreamSourceRef.current) {
-            mediaStreamSourceRef.current.disconnect();
-        }
-        if (inputAudioContextRef.current && inputAudioContextRef.current.state !== 'closed') {
-            inputAudioContextRef.current.close();
-        }
-        if (outputAudioContextRef.current && outputAudioContextRef.current.state !== 'closed') {
-            outputAudioContextRef.current.close();
-        }
+        streamRef.current?.getTracks().forEach(track => track.stop());
+        scriptProcessorRef.current?.disconnect();
+        mediaStreamSourceRef.current?.disconnect();
+        inputAudioContextRef.current?.close().catch(console.error);
+        outputAudioContextRef.current?.close().catch(console.error);
         stopAllAudio();
         setState(prev => ({ ...prev, isActive: false, isConnecting: false, sessionPromise: null }));
     }, [state.sessionPromise, stopAllAudio]);
 
     useEffect(() => {
-        return () => {
-            cleanup();
-        };
+        return () => { cleanup(); };
     }, [cleanup]);
 
     const handleToggleConnection = async () => {
@@ -123,80 +136,70 @@ const VoiceAssistantPage: React.FC = () => {
                 callbacks: {
                     onopen: () => {
                         setState(prev => ({ ...prev, isConnecting: false, isActive: true }));
-                        
                         mediaStreamSourceRef.current = inputAudioContextRef.current!.createMediaStreamSource(stream);
                         scriptProcessorRef.current = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
-                        
                         scriptProcessorRef.current.onaudioprocess = (event) => {
                             const inputData = event.inputBuffer.getChannelData(0);
                             const pcmBlob: Blob = {
                                 data: encode(new Uint8Array(new Int16Array(inputData.map(x => x * 32768)).buffer)),
                                 mimeType: 'audio/pcm;rate=16000',
                             };
-                            sessionPromise.then((session) => {
-                                session.sendRealtimeInput({ media: pcmBlob });
-                            });
+                            sessionPromise.then((session) => session.sendRealtimeInput({ media: pcmBlob }));
                         };
-                        
                         mediaStreamSourceRef.current.connect(scriptProcessorRef.current);
                         scriptProcessorRef.current.connect(inputAudioContextRef.current!.destination);
                     },
                     onmessage: async (message: LiveServerMessage) => {
-                        if (message.serverContent) {
-                            if (message.serverContent.inputTranscription) {
-                                setState(prev => ({...prev, currentTranscription: { ...prev.currentTranscription, user: prev.currentTranscription.user + message.serverContent.inputTranscription.text }}));
-                            }
-                            if (message.serverContent.outputTranscription) {
-                                setState(prev => ({...prev, currentTranscription: { ...prev.currentTranscription, model: prev.currentTranscription.model + message.serverContent.outputTranscription.text }}));
-                            }
-                            if (message.serverContent.turnComplete) {
-                                setState(prev => {
-                                    const fullTurn = prev.currentTranscription;
-                                    return {
-                                        ...prev,
-                                        transcription: [...prev.transcription, fullTurn],
-                                        currentTranscription: { user: '', model: '' }
-                                    };
+                        if (message.toolCall) {
+                            for (const fc of message.toolCall.functionCalls) {
+                                let resultText = "Okay, done.";
+                                if (fc.name === 'scheduleTask') {
+                                    const { taskDescription, time } = fc.args;
+                                    addNotification({ type: 'task', text: taskDescription, time });
+                                    resultText = `I've scheduled a task for you: ${taskDescription} at ${time}.`;
+                                } else if (fc.name === 'setWakeUpCall') {
+                                    const { time } = fc.args;
+                                    addNotification({ type: 'wakeup', text: `Wake-up call set for ${time}`, time });
+                                     resultText = `Okay, I've set a wake-up call for you at ${time}.`;
+                                }
+                                sessionPromise.then((session) => {
+                                    session.sendToolResponse({ functionResponses: { id: fc.id, name: fc.name, response: { result: resultText } } });
                                 });
                             }
-                            if(message.serverContent.interrupted) {
-                                stopAllAudio();
-                            }
+                        }
 
-                            const audioData = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
-                            if (audioData && outputAudioContextRef.current) {
-                                const outputCtx = outputAudioContextRef.current;
-                                const audioBuffer = await decodeAudioData(decode(audioData), outputCtx, 24000, 1);
-                                const source = outputCtx.createBufferSource();
-                                source.buffer = audioBuffer;
-                                source.connect(outputCtx.destination);
-                                
-                                nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
-                                source.start(nextStartTimeRef.current);
-                                nextStartTimeRef.current += audioBuffer.duration;
+                        if (message.serverContent?.inputTranscription) setState(prev => ({...prev, currentTranscription: { ...prev.currentTranscription, user: prev.currentTranscription.user + message.serverContent.inputTranscription.text }}));
+                        if (message.serverContent?.outputTranscription) setState(prev => ({...prev, currentTranscription: { ...prev.currentTranscription, model: prev.currentTranscription.model + message.serverContent.outputTranscription.text }}));
+                        
+                        if (message.serverContent?.turnComplete) {
+                            setState(prev => ({ ...prev, transcription: [...prev.transcription, prev.currentTranscription], currentTranscription: { user: '', model: '' } }));
+                        }
+                        
+                        if(message.serverContent?.interrupted) stopAllAudio();
 
-                                audioSourcesRef.current.add(source);
-                                source.onended = () => {
-                                    audioSourcesRef.current.delete(source);
-                                };
-                            }
+                        const audioData = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+                        if (audioData && outputAudioContextRef.current) {
+                            const outputCtx = outputAudioContextRef.current;
+                            const audioBuffer = await decodeAudioData(decode(audioData), outputCtx, 24000, 1);
+                            const source = outputCtx.createBufferSource();
+                            source.buffer = audioBuffer;
+                            source.connect(outputCtx.destination);
+                            nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
+                            source.start(nextStartTimeRef.current);
+                            nextStartTimeRef.current += audioBuffer.duration;
+                            audioSourcesRef.current.add(source);
+                            source.onended = () => audioSourcesRef.current.delete(source);
                         }
                     },
-                    onerror: (e: ErrorEvent) => {
-                        console.error('Session error:', e);
-                        cleanup();
-                    },
-                    onclose: () => {
-                        cleanup();
-                    },
+                    onerror: (e: ErrorEvent) => { console.error('Session error:', e); cleanup(); },
+                    onclose: () => { cleanup(); },
                 },
                 config: {
                     responseModalities: [Modality.AUDIO],
                     inputAudioTranscription: {},
                     outputAudioTranscription: {},
-                    speechConfig: {
-                        voiceConfig: {prebuiltVoiceConfig: {voiceName: 'Zephyr'}},
-                    },
+                    speechConfig: { voiceConfig: {prebuiltVoiceConfig: {voiceName: 'Zephyr'}} },
+                    tools: [{ functionDeclarations: [scheduleTaskFunctionDeclaration, setWakeUpCallFunctionDeclaration] }],
                 }
             });
             setState(prev => ({...prev, sessionPromise}));
@@ -210,7 +213,7 @@ const VoiceAssistantPage: React.FC = () => {
         <div className="animate-fadeIn h-full flex flex-col justify-center items-center text-center">
             <header className="mb-8">
                 <h1 className="text-4xl md:text-5xl font-bold neon-text-orchid">Voice Assistant</h1>
-                <p className="text-lg text-soft-gray mt-2">Talk to your wellness companion in real-time.</p>
+                <p className="text-lg text-soft-gray mt-2">Talk, schedule tasks, or set alarms in real-time.</p>
             </header>
             <GlassCard className="max-w-2xl w-full h-[65vh] flex flex-col">
                 <div className="flex-grow overflow-y-auto pr-2 space-y-4 mb-4 text-left">
@@ -220,10 +223,10 @@ const VoiceAssistantPage: React.FC = () => {
                             <p><strong className="text-neon-pink">AI:</strong> {t.model}</p>
                         </div>
                     ))}
-                    { (state.currentTranscription.user || state.currentTranscription.model) &&
-                        <div className="p-2">
-                            <p className="text-gray-400"><strong className="text-soft-gray">You:</strong> {state.currentTranscription.user}</p>
-                            <p className="text-gray-400"><strong className="text-neon-pink">AI:</strong> {state.currentTranscription.model}</p>
+                     {(state.currentTranscription.user || state.currentTranscription.model) &&
+                        <div className="p-2 opacity-70">
+                            <p><strong className="text-soft-gray">You:</strong> {state.currentTranscription.user}</p>
+                            <p><strong className="text-neon-pink">AI:</strong> {state.currentTranscription.model}</p>
                         </div>
                     }
                 </div>

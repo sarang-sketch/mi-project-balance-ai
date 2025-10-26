@@ -21,55 +21,60 @@ import SignUpPage from './pages/SignUpPage';
 import Sidebar from './components/layout/Sidebar';
 import BottomNav from './components/layout/BottomNav';
 import Header from './components/layout/Header';
+import FloatingMonitorWidget from './components/ui/FloatingMonitorWidget';
+import ScreenMonitorModal from './components/modals/ScreenMonitorModal';
 
-// Mock Data
 const MOCK_NOTIFICATIONS: Notification[] = [
     { id: 1, type: 'goal', text: "Congratulations! You completed your 'Mindful Morning' goal.", time: '2 hours ago' },
     { id: 2, type: 'streak', text: 'You\'re on a 3-day streak for physical activity. Keep it up!', time: '1 day ago' },
     { id: 3, type: 'task', text: 'Reminder: Your plan suggests a 15-minute digital detox.', time: '3 days ago' },
-    { id: 4, type: 'wakeup', text: 'Good Morning! Time to start your day with a positive mindset.', time: '5 days ago' },
-    { id: 5, type: 'system', text: 'Welcome to BalanceAI! Complete your assessment to get started.', time: '5 days ago' }
-];
-
-const MOCK_ACTIVITIES: LoggedActivity[] = [
-    { name: 'Morning Meditation', category: 'Mental', duration: '10 mins', time: 'Today' },
-    { name: 'Team Project Work', category: 'Digital', duration: '3 hours', time: 'Today' },
-    { name: 'Lunchtime Walk', category: 'Physical', duration: '30 mins', time: 'Yesterday' },
 ];
 
 const NOTIFICATIONS_STORAGE_KEY = 'balance-ai-notifications';
+const ACTIVITIES_STORAGE_KEY = 'balance-ai-activities';
+const MONITOR_ENABLED_KEY = 'balance-ai-monitor-enabled';
+
 
 const App: React.FC = () => {
     const [currentPage, setCurrentPage] = useState<Page>('welcome');
     const [quizAnswers, setQuizAnswers] = useState<QuizAnswers | null>(null);
     const [wellnessPlan, setWellnessPlan] = useState<WellnessPlan | null>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loggedActivities, setLoggedActivities] = useState<LoggedActivity[]>(MOCK_ACTIVITIES);
+    const [loggedActivities, setLoggedActivities] = useState<LoggedActivity[]>([]);
+    
+    // AI Screen Monitor State
+    const [isMonitorEnabled, setIsMonitorEnabled] = useState(false);
+    const [isMonitorModalOpen, setIsMonitorModalOpen] = useState(false);
 
      useEffect(() => {
+        // Load persisted state from localStorage
         try {
             const storedNotifications = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-            if (storedNotifications) {
-                setNotifications(JSON.parse(storedNotifications));
-            } else {
-                setNotifications(MOCK_NOTIFICATIONS);
-            }
+            setNotifications(storedNotifications ? JSON.parse(storedNotifications) : MOCK_NOTIFICATIONS);
+
+            const storedActivities = localStorage.getItem(ACTIVITIES_STORAGE_KEY);
+            setLoggedActivities(storedActivities ? JSON.parse(storedActivities) : []);
+
+            const monitorEnabled = localStorage.getItem(MONITOR_ENABLED_KEY);
+            setIsMonitorEnabled(monitorEnabled === 'true');
+
         } catch (error) {
-            console.error("Could not load notifications from local storage", error);
-            setNotifications(MOCK_NOTIFICATIONS);
+            console.error("Could not load from local storage", error);
         }
     }, []);
 
     useEffect(() => {
+        // Persist state changes to localStorage
         try {
             localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+            localStorage.setItem(ACTIVITIES_STORAGE_KEY, JSON.stringify(loggedActivities));
+            localStorage.setItem(MONITOR_ENABLED_KEY, String(isMonitorEnabled));
         } catch (error) {
-            console.error("Could not save notifications to local storage", error);
+            console.error("Could not save to local storage", error);
         }
-    }, [notifications]);
+    }, [notifications, loggedActivities, isMonitorEnabled]);
 
     const handleNavigate = (page: Page) => setCurrentPage(page);
-
     const handleStartQuiz = () => setCurrentPage('quiz');
 
     const handleQuizComplete = (answers: QuizAnswers) => {
@@ -79,20 +84,22 @@ const App: React.FC = () => {
 
     const handlePlanGenerated = (plan: WellnessPlan) => {
         setWellnessPlan(plan);
+        addNotification({ type: 'system', text: 'Your new personalized wellness plan is ready!', time: 'Just now'});
         setCurrentPage('dashboard');
     };
     
     const handleAddActivity = (activity: Omit<LoggedActivity, 'time'>) => {
-        const newActivity: LoggedActivity = { ...activity, time: 'Today' };
+        const newActivity: LoggedActivity = { ...activity, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}) };
         setLoggedActivities(prev => [newActivity, ...prev]);
     };
 
     const addNotification = (notification: Omit<Notification, 'id'>) => {
-        const newNotification: Notification = {
-            id: Date.now(),
-            ...notification
-        };
+        const newNotification: Notification = { id: Date.now(), ...notification };
         setNotifications(prev => [newNotification, ...prev]);
+    };
+
+    const handleToggleMonitor = () => {
+        setIsMonitorEnabled(prev => !prev);
     };
 
     const pageTitle = useMemo(() => {
@@ -127,7 +134,7 @@ const App: React.FC = () => {
             case 'result':
                 return <ResultPage answers={quizAnswers} onPlanGenerated={handlePlanGenerated} />;
             case 'dashboard':
-                 return <DashboardPage plan={wellnessPlan} loggedActivities={loggedActivities} onNavigate={handleNavigate} />;
+                 return <DashboardPage plan={wellnessPlan} onAddActivity={handleAddActivity} onNavigate={handleNavigate} />;
             case 'plan':
                 return <PlanPage plan={wellnessPlan} onNavigate={handleNavigate} />;
             case 'progress':
@@ -135,13 +142,13 @@ const App: React.FC = () => {
             case 'scanner':
                 return <ScannerPage />;
             case 'voice-assistant':
-                return <VoiceAssistantPage />;
+                return <VoiceAssistantPage addNotification={addNotification} />;
             case 'assistant':
                 return <AssistantPage />;
             case 'community':
                 return <CommunityPage />;
             case 'settings':
-                return <SettingsPage />;
+                return <SettingsPage isMonitorEnabled={isMonitorEnabled} onToggleMonitor={handleToggleMonitor} />;
             case 'video-creator':
                 return <VideoCreatorPage plan={wellnessPlan} />;
             case 'activity-tracker':
@@ -173,6 +180,8 @@ const App: React.FC = () => {
                     </div>
                 </main>
                 {showLayout && <BottomNav currentPage={currentPage} onNavigate={handleNavigate} />}
+                 {showLayout && isMonitorEnabled && <FloatingMonitorWidget onClick={() => setIsMonitorModalOpen(true)} />}
+                 {isMonitorModalOpen && <ScreenMonitorModal onClose={() => setIsMonitorModalOpen(false)} />}
             </div>
         </div>
     );

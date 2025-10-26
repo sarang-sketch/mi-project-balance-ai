@@ -5,11 +5,10 @@ import StatCard from '../components/ui/StatCard';
 import { ActivityIcon, BotIcon, ChecklistIcon, HomeIcon, WellnessPlanIcon } from '../components/icons/NavIcons';
 import NeonButton from '../components/ui/NeonButton';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import BrainLogo from '../components/ui/BrainLogo';
 
 interface DashboardPageProps {
     plan: WellnessPlan | null;
-    loggedActivities: LoggedActivity[];
+    onAddActivity: (activity: Omit<LoggedActivity, 'time' | 'duration'> & { duration?: string }) => void;
     onNavigate: (page: Page) => void;
 }
 
@@ -24,12 +23,17 @@ const balanceScoreData = [
     { name: 'Sun', score: 91 },
 ];
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ plan, loggedActivities, onNavigate }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ plan, onAddActivity, onNavigate }) => {
+
     const todayActivities = plan ? [
-        plan.mentalWellness.activities[0],
-        plan.physicalWellness.activities[0],
-        plan.digitalWellness.activities[0],
+        { ...plan.mentalWellness.activities[0], category: 'Mental' as const },
+        { ...plan.physicalWellness.activities[0], category: 'Physical' as const },
+        { ...plan.digitalWellness.activities[0], category: 'Digital' as const },
     ] : [];
+
+    const handleLogActivity = (activity: { name: string, category: 'Mental' | 'Physical' | 'Digital', duration: string }) => {
+        onAddActivity({ name: activity.name, category: activity.category, duration: activity.duration });
+    };
 
     return (
         <div className="animate-fadeIn space-y-8">
@@ -40,7 +44,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ plan, loggedActivities, o
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="Balance Score" value="91%" change="+3%" changeType="increase" color="#C71585" icon={<HomeIcon />} />
-                <StatCard title="Activities Done" value={`${loggedActivities.length}`} change="+1 Today" changeType="increase" color="#8A2BE2" icon={<ActivityIcon />} />
+                <StatCard title="Activities Done" value="12" change="+1 Today" changeType="increase" color="#8A2BE2" icon={<ActivityIcon />} />
                 <StatCard title="Current Streak" value="7 Days" change="+1" changeType="increase" color="#32CD32" icon={<ChecklistIcon />} />
                  <StatCard title="Plan Adherence" value="85%" change="-2%" changeType="decrease" color="#FFA500" icon={<WellnessPlanIcon />} />
             </div>
@@ -51,8 +55,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ plan, loggedActivities, o
                     <div className="h-64">
                          <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={balanceScoreData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                                <XAxis dataKey="name" stroke="#a0a0a0" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#a0a0a0" fontSize={12} tickLine={false} axisLine={false} />
+                                <XAxis dataKey="name" stroke="#a0a0b0" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#a0a0b0" fontSize={12} tickLine={false} axisLine={false} />
                                 <Tooltip contentStyle={{ backgroundColor: 'rgba(30, 30, 42, 0.8)', border: '1px solid #C71585', borderRadius: '12px' }}/>
                                 <Line type="monotone" dataKey="score" stroke="#C71585" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                             </LineChart>
@@ -76,11 +80,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ plan, loggedActivities, o
                     <button onClick={() => onNavigate('plan')} className="text-sm text-neon-pink hover:underline">View Full Plan →</button>
                 </div>
                 {plan ? (
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <div className="space-y-3">
                         {todayActivities.map((activity, index) => (
-                            <div key={index} className="bg-card-bg p-4 rounded-lg">
-                                <h3 className="font-bold">{activity.name}</h3>
-                                <p className="text-xs text-soft-gray">{activity.duration}</p>
+                            <div key={index} className="bg-card-bg p-4 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold">{activity.name}</h3>
+                                    <p className="text-xs text-soft-gray">{activity.category} • {activity.duration}</p>
+                                </div>
+                                <button onClick={() => handleLogActivity(activity)} className="px-4 py-1.5 text-xs font-semibold bg-neon-pink/80 rounded-full hover:bg-neon-pink transition-colors">
+                                    Log
+                                </button>
                             </div>
                         ))}
                     </div>

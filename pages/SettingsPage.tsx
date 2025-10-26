@@ -1,20 +1,32 @@
 import React from 'react';
 import GlassCard from '../components/ui/GlassCard';
-import { UserIcon, BellIcon, ChecklistIcon } from '../components/icons/NavIcons';
+import { UserIcon, BellIcon, ChecklistIcon, BotIcon } from '../components/icons/NavIcons';
 
-const SettingsToggle: React.FC<{ label: string; description: string; enabled: boolean }> = ({ label, description, enabled }) => (
+interface SettingsToggleProps {
+    label: string;
+    description: string;
+    enabled: boolean;
+    onToggle: () => void;
+}
+
+const SettingsToggle: React.FC<SettingsToggleProps> = ({ label, description, enabled, onToggle }) => (
     <div className="flex justify-between items-center">
         <div>
             <p className="font-semibold">{label}</p>
             <p className="text-sm text-soft-gray">{description}</p>
         </div>
-        <div className={`w-14 h-8 rounded-full p-1 cursor-pointer transition-colors ${enabled ? 'bg-neon-pink' : 'bg-secondary-bg'}`}>
+        <button onClick={onToggle} className={`relative w-14 h-8 rounded-full p-1 transition-colors ${enabled ? 'bg-neon-pink' : 'bg-secondary-bg'}`}>
             <div className={`w-6 h-6 rounded-full bg-white transform transition-transform ${enabled ? 'translate-x-6' : ''}`} />
-        </div>
+        </button>
     </div>
 );
 
-const SettingsPage: React.FC = () => {
+interface SettingsPageProps {
+    isMonitorEnabled: boolean;
+    onToggleMonitor: () => void;
+}
+
+const SettingsPage: React.FC<SettingsPageProps> = ({ isMonitorEnabled, onToggleMonitor }) => {
     return (
         <div className="animate-fadeIn space-y-8">
             <header className="text-center">
@@ -23,6 +35,21 @@ const SettingsPage: React.FC = () => {
             </header>
             
             <div className="max-w-2xl mx-auto space-y-8">
+                <GlassCard>
+                     <div className="flex items-center gap-4 mb-6">
+                         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orchid-purple/30 flex items-center justify-center">
+                            <BotIcon className="w-6 h-6 text-soft-gray"/>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold">AI Features</h2>
+                             <p className="text-sm text-soft-gray">Manage AI-powered functionality.</p>
+                        </div>
+                    </div>
+                     <div className="space-y-6">
+                        <SettingsToggle label="Continuous Screen Monitoring" description="Enable a floating widget for real-time digital wellness checks." enabled={isMonitorEnabled} onToggle={onToggleMonitor} />
+                    </div>
+                </GlassCard>
+
                 <GlassCard>
                     <div className="flex items-center gap-4 mb-6">
                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orchid-purple/30 flex items-center justify-center">
@@ -51,9 +78,9 @@ const SettingsPage: React.FC = () => {
                         </div>
                     </div>
                      <div className="space-y-6">
-                        <SettingsToggle label="Push Notifications" description="Receive alerts on your device" enabled={true} />
-                        <SettingsToggle label="Email Summaries" description="Get weekly progress reports" enabled={true} />
-                        <SettingsToggle label="Community Alerts" description="Notify me of new community posts" enabled={false} />
+                        <SettingsToggle label="Push Notifications" description="Receive alerts on your device" enabled={true} onToggle={() => {}} />
+                        <SettingsToggle label="Email Summaries" description="Get weekly progress reports" enabled={true} onToggle={() => {}} />
+                        <SettingsToggle label="Community Alerts" description="Notify me of new community posts" enabled={false} onToggle={() => {}} />
                     </div>
                 </GlassCard>
                 
