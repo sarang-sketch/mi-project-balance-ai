@@ -1,0 +1,7 @@
+{
+  "name": "Copy of BalanceAI",
+  "description": "A futuristic wellness web app with a Dark Orchid-inspired UI to help you balance your mind, body, and digital life. It features AI-personalized plans, real-time tracking, and interactive tools.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

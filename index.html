@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BalanceAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-black': '#000000',
+                        'primary-bg': '#121212',
+                        'secondary-bg': '#1A1A1A',
+                        'card-bg': '#2A2A2A',
+                        'orchid-purple': '#8B5A8B',
+                        'neon-pink': '#C71585',
+                        'soft-gray': '#a0a0a0',
+                        'light-gray': '#D1D5DB',
+                        'accent-green': '#10B981',
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px) translateX(0px)' },
+                            '50%': { transform: 'translateY(-20px) translateX(10px)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                    },
+                    animation: {
+                        'float': 'float 15s ease-in-out infinite',
+                        'fadeIn': 'fadeIn 0.7s ease-out forwards',
+                        'fadeIn-delay-1': 'fadeIn 0.7s ease-out 0.2s forwards',
+                        'fadeIn-delay-2': 'fadeIn 0.7s ease-out 0.4s forwards',
+                    },
+                    boxShadow: {
+                        'neon-pink': '0 0 15px rgba(199, 21, 133, 0.6)',
+                        'orchid-purple': '0 0 15px rgba(139, 90, 139, 0.5)',
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(42, 42, 42, 0.5);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(139, 90, 139, 0.3);
+        }
+        .neon-glow-orchid {
+            filter: drop-shadow(0 0 8px #C71585);
+        }
+        .neon-text-orchid {
+             text-shadow: 0 0 5px #C71585, 0 0 10px #C71585;
+        }
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #8B5A8B, #C71585);
+        }
+        .text-gradient {
+            background-image: linear-gradient(to right, #8B5A8B, #C71585);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        /* Scrollbar styles for main content area */
+        #main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        #main-content::-webkit-scrollbar-track {
+            background: #1A1A1A;
+        }
+        #main-content::-webkit-scrollbar-thumb {
+            background-color: #8B5A8B;
+            border-radius: 10px;
+            border: 2px solid #1A1A1A;
+        }
+        #main-content::-webkit-scrollbar-thumb:hover {
+            background-color: #C71585;
+        }
+    </style>
+</head>
+<body class="bg-primary-bg">
+    <div id="root"></div>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
+        "recharts": "https://aistudiocdn.com/recharts@^3.3.0"
+      }
+    }
+    </script>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
